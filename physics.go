@@ -124,9 +124,7 @@ func CheckCollision2(p1 PhysicsObject, p2 PhysicsObject){
 	var n Vec3
 	switch overlap.Abs().BiggestComponent() {
 	case 0: n = Vec3{1,0,0} 
-
 	case 1: n = Vec3{0,1,0}
-	
 	case 2: n = Vec3{0,0,1}
 	}
 
@@ -158,7 +156,6 @@ func CheckCollision2(p1 PhysicsObject, p2 PhysicsObject){
 }
 
 func DoPhysics(worldObjects *list.List,dt float32){
-	//fmt.Println("Physics loop:")
 	allObjects := []PhysicsObject{}
 
 	for item := worldObjects.Front(); item != nil;item = item.Next() {
@@ -190,5 +187,5 @@ func DoPhysics(worldObjects *list.List,dt float32){
 		}
 
 	}
-
+	
 }

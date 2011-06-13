@@ -15,7 +15,6 @@ type GameObj struct {
 	Children *list.List
 	Constraints []Constraint
 	Rotation Vec3
-
 }
 
 func (self *GameObj) GetPosition()(Vec3){
@@ -48,13 +47,6 @@ func (self *GameObj) GetBoundingBox()(bb Box){
 	bb.Pos = self.Pos
 	bb.Size = self.Size
 	return
-}
-
-
-func (s *GameObj) KeyDown(key int) {
-	if key == 'S' {
-		s.Pos.X -=1
-	}
 }
 
 func (s *GameObj) GetBox3D()(output Box3D){
@@ -90,7 +82,7 @@ func (self *GameObj) GetSubs() ([]PhysicsObject){
 			output = append(output,  child.GetSubs()...)
 		}
 	}
-	//fmt.Println(self.GetMass())
+	
 	return output
 }
 
@@ -102,7 +94,6 @@ type World struct{
 }
 
 func (self *World) Init(){
-	fmt.Println("Hey")
 	self.GameObjects = new(list.List)
 }
 
@@ -273,7 +264,6 @@ func main(){
 	world.Add(testbox(Vec3{10,0,0}))
 	world.Add(testbox(Vec3{10,10,0}))
 	world.Add(testbox(Vec3{10,15,0}))
-	//world.Add(testbox2(Vec3{10,20,0}))
 	world.Add(testbox3(Vec3{-10,10,0}))
 	player := MakeMan(Vec3{0,10,0})
 	world.Add(player)
@@ -281,9 +271,6 @@ func main(){
 	nbox := testbox2(Vec3{15,20,0})
 	nbox.Mass = 10
 	world.Add(nbox)
-	//world.Add(MakeMan(Vec3{-4,3,0}))
-	math.Sin(1)
-	glfw.Version()
 	
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
@@ -302,9 +289,11 @@ func main(){
 	pg.Validate()
 	
 	pg.Use()
+	fmt.Println("**Shader log**")
 	fmt.Println(fs.GetInfoLog())
 	fmt.Println(vs.GetInfoLog())
 	fmt.Println(pg.GetInfoLog())
+	fmt.Println("******END*****")
 	
 	gl.ClearColor(0.5,0.5,1,0)
 	gl.Enable(gl.CULL_FACE)
@@ -328,7 +317,6 @@ func main(){
 		cam1.Setup()
 		ot = t
 		t = float64(float64(time.Nanoseconds())/1000000000)
-		//fmt.Println(t - ot)
 		go DoPhysics(world.GameObjects,float32(t-ot))
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,float32(t-ot),pg)
