@@ -1,6 +1,7 @@
 //Fragment shader..
-
+varying float fogFactor;
+varying vec3 fragPos;
 void main(){
-
-  gl_FragColor = gl_Color;
+  float fragPosition = length(fragPos);
+  gl_FragColor = mix(vec4(0,0,0,1),gl_Color,exp(-fragPosition/100));
 }

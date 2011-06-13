@@ -109,7 +109,7 @@ func MakeMan(position Vec3)(*GameObj){
 	body := new(GameObj)
 	*body = NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.5,0.5},50)
 
-	rleg := NewGameObj(Vec3{2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},10)
+	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},10)
 	rlegc := ObjectConstraint{body,&rleg,Vec3{2,-4,0},func(x Vec3)(Vec3){return x.Scale(1000)}}
 	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},10)
 	llegc := ObjectConstraint{body,&lleg,Vec3{-2,-4,0},func(x Vec3)(Vec3){return x.Scale(1000)}}
@@ -253,7 +253,7 @@ func main(){
 
 	ground := new(GameObj)
 	ground.Pos = Vec3{0,-3,0}
-	ground.Size = Vec3{100,10,100}
+	ground.Size = Vec3{1000,10,1000}
 	ground.Color = Vec3{0,0.5,0.1}
 	ground.Mass = float32(math.Inf(1))
 	ground.Children = new(list.List)
@@ -265,13 +265,12 @@ func main(){
 	world.Add(testbox(Vec3{10,10,0}))
 	world.Add(testbox(Vec3{10,15,0}))
 	world.Add(testbox3(Vec3{-10,10,0}))
-	player := MakeMan(Vec3{0,10,0})
+	player := MakeMan(Vec3{10,100,10})
 	world.Add(player)
 	world.Add(ropetest(Vec3{0,40,0},10,1.5))
 	nbox := testbox2(Vec3{15,20,0})
 	nbox.Mass = 10
 	world.Add(nbox)
-	
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
@@ -295,9 +294,17 @@ func main(){
 	fmt.Println(pg.GetInfoLog())
 	fmt.Println("******END*****")
 	
-	gl.ClearColor(0.5,0.5,1,0)
-	gl.Enable(gl.CULL_FACE)
+	//gl.ClearColor(0.5,0.5,1,0)
+	gl.ClearColor(0,0,0,0)
+	//gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.BLEND)
+	gl.Enable(gl.FOG)
+	//gl.Disable(gl.DEPTH_TEST)
+	//gl.CullFace(gl.BACK)
+	gl.Enable(gl.POLYGON_SMOOTH)
+	gl.Hint(gl.POLYGON_SMOOTH_HINT,gl.NICEST)
+
 	var t float64
 	var ot float64
 	t = float64(time.Nanoseconds())/1000000000

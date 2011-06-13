@@ -1,5 +1,6 @@
 package main
 import "math"
+
 type Vec3 struct{
 	X float32
 	Y float32
@@ -36,12 +37,21 @@ func Fabs32(in float32)(float32){
 	if in < 0 {
 		return -in
 	}
-	return in
-	
+	return in	
 }
 
 func (self Vec3) Abs()(Vec3){
 		return Vec3{Fabs32(self.X),Fabs32(self.Y),Fabs32(self.Z)}
+}
+func (self Vec3) Rotate(rx float32, ry float32) Vec3{
+	cosa := Cos32(rx)
+	sina := Sin32(rx)
+	cosb := Cos32(ry)
+	sinb := Sin32(ry)
+	x := cosb*self.X + sinb*self.Z
+	y := sina*sinb*self.X + self.Y*cosa -self.Z*sina*cosb
+	z := -self.X*cosa*sinb + self.Y*sina + self.Z*cosa*cosb
+	return Vec3{x,y,z}
 }
 
 
@@ -92,15 +102,5 @@ func (s Vec3) BiggestComponent()(int){
 		return 1
 	}
 	return 2
-}
-
-
-
-
-func MakeVec3(X float32, Y float32, Z float32)(output Vec3){
-	output.X = X
-	output.Y = Y
-	output.Z = Z
-	return
 }
 

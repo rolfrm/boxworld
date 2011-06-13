@@ -45,9 +45,10 @@ type Box3D struct{
 }
 
 
-var verts []float32 
+var verts []float32
+var normals []float32 
 var verts_init bool
-func GetVerts()([]float32){
+func GetVerts()([]float32,[]float32){
 	if(verts_init == false){
 		verts_init = true
 		verts = [] float32{1,1,1 ,1,-1,1 ,-1,-1,1, -1,1,1, //Front
@@ -57,16 +58,22 @@ func GetVerts()([]float32){
 		1,-1,1,  1,-1,-1, -1,-1,-1,  -1,-1,1, //button
 		
 		1,1,1  ,1,1,-1 ,1,-1,-1, 1,-1,1, //left
-		-1,1,1  ,-1,-1,1 ,-1,-1,-1, -1,1,-1} //righ
+		-1,1,1  ,-1,-1,1 ,-1,-1,-1, -1,1,-1} //rig
+		normals = [] float32{0,0,1, 0,0,1, 0,0,1, 0,0,1,
+		0,0,-1, 0,0,-1, 0,0,-1, 0,0,-1, 
+		0,1,0,	0,1,0, 0,1,0, 0,1,0, 
+		0,-1,0, 0,-1,0, 0,-1,0, 0,-1,0,
+		-1,0,0, -1,0,0, -1,0,0, -1,0,0,
+		1,0,0, 1,0,0, 1,0,0, 1,0,0}
 	}
-	return verts
+	return verts,normals
 }
 
 
 
 func DrawAABB(aabb Drawable, t float32, program gl.Program){
 	box := aabb.GetBox3D()
-	nverts := GetVerts()
+	nverts, normals := GetVerts()
 	if(box.Animator != nil){
 		box.Animator(&box,t)
 	}
@@ -79,8 +86,12 @@ func DrawAABB(aabb Drawable, t float32, program gl.Program){
 	gl.Color3f(drawColor.X,drawColor.Y,drawColor.Z)
 	gl.EnableClientState(gl.VERTEX_ARRAY)
 	gl.VertexPointer(3,0,nverts)
+	gl.EnableClientState(gl.NORMAL_ARRAY)
+	gl.NormalPointer(0,normals)
+
 	gl.DrawArrays(gl.QUADS,0,24)
-	gl.EnableClientState(0)
+	gl.DisableClientState(gl.NORMAL_ARRAY)
+	gl.DisableClientState(gl.VERTEX_ARRAY)
 	for it := aabb.GetChildren(); it != nil;it = it.Next() {
 		DrawAABB(it.Value.(Drawable),t,program)
 	}

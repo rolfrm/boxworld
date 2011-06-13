@@ -6,6 +6,7 @@ include $(GOROOT)/src/Make.inc
 
 TARG=run
 GOFILES=\
+	math32.go\
 	Vector.go\
 	physics.go\
 	graphics.go\
