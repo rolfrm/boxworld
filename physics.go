@@ -1,6 +1,7 @@
 package main
 import "container/list"
 import "math"
+//import "fmt"
 var Inf float32
 
 func InitPhysics(){
@@ -21,6 +22,7 @@ type PhysicsObject interface{
 	SetVelocity(Vec3)()
 	GetMass()(float32)
 	SetMass(float32)
+	GetFriction()(float32)
 	GetConstraints()([]Constraint)
 	GetSubs()([]PhysicsObject)
 	GetSize()(Vec3)
@@ -46,16 +48,22 @@ type ObjectConstraint struct{
 	P1 PhysicsObject 
 	P2 PhysicsObject
 	V Vec3
-	F func(x Vec3 )(Vec3)
+	Spring float32
+	Damp float32
+	
 }
 
 func (oc ObjectConstraint) Apply(dt float32){
-	diff := oc.P2.GetPosition().Sub(oc.P1.GetPosition().Add(oc.V))
-	dl := oc.F(diff).Scale(dt)
-	dvel :=oc.P2.GetVelocity().Sub(oc.P1.GetVelocity())
-	ftotal := dl.Sub(dvel.Scale(-0.9))
-	ApplyImpulse(oc.P1,ftotal.Scale(0.5))
-	ApplyImpulse(oc.P2,ftotal.Scale(-0.5))
+	x := oc.P1.GetPosition().Sub( oc.P2.GetPosition() ).Add(oc.V)
+	fspring := x.Scale(oc.Spring)
+	dvel :=oc.P1.GetVelocity().Sub(oc.P2.GetVelocity())
+	fdamp := dvel.Scale(oc.Damp)
+	ftotal := Vec3{0,0,0}.Sub(fspring).Sub(fdamp)
+
+	ApplyImpulse(oc.P1,ftotal.Scale(0.5*dt))
+	ApplyImpulse(oc.P2,ftotal.Scale(-0.5*dt))
+	//fmt.Println(oc.P1.GetPosition(), oc.P2.GetPosition(), oc.P1.GetVelocity() , oc.P2.GetVelocity(), x,fspring,dvel,fdamp,ftotal)
+	
 }
 
 type RopeConstraint struct{
@@ -123,11 +131,11 @@ func CheckCollision2(p1 PhysicsObject, p2 PhysicsObject){
 
 	var n Vec3
 	switch overlap.Abs().BiggestComponent() {
-	case 0: n = Vec3{1,0,0} 
+	case 0: n = Vec3{1,0,0}  
 	case 1: n = Vec3{0,1,0}
 	case 2: n = Vec3{0,0,1}
 	}
-
+	//cn := Vec3{1,1,1}.Sub(n)
 	nd := p1.GetPosition().ElemMul(n).Sub(p2.GetPosition().ElemMul(n)) //Get Overlap on collision axis
 	if nd.Dot(n) < 0 {
 		n = n.Scale(-1)
@@ -144,13 +152,17 @@ func CheckCollision2(p1 PhysicsObject, p2 PhysicsObject){
 	p1.SetPosition(p1.GetPosition().Add(m1))
 	p2.SetPosition(p2.GetPosition().Add(m2))
 
-
-
-
 	e := float32(0)
-	j :=  difval.Scale(-1*(1 + e)).Dot(n)/(1/p1.GetMass() + 1/p2.GetMass())
+	j :=  difval.Scale(-1*(1 + e)).Dot(n)/(1/p1.GetMass() + 1/p2.GetMass()) //Normal force
+	
+	//fdamp :=j*(p1.GetFriction()+p2.GetFriction()) //Dampening due to friction
+
 	p1.SetVelocity(p1.GetVelocity().Add(n.Scale(j/p1.GetMass() )))
 	p2.SetVelocity(p2.GetVelocity().Sub(n.Scale(j/p2.GetMass() )))
+
+	
+	//fmt.Println(fdamp,cn)
+
 	
 
 }

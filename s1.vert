@@ -15,6 +15,7 @@ void main(){
   gl_FogFragCoord = length(vVertex.xyz);
   float fogDensity = 0.1;
   fogFactor = exp(-gl_FogFragCoord/100);//exp2(-fogDensity*gl_FogFragCoord*gl_FogFragCoord*1.442695);
-  gl_FrontColor = gl_Color*(0.5*dot(norm,vec3(1,1,1))+ 0.8);
+  // gl_FrontColor = gl_Color*(0.5*dot(norm,vec3(1,1,1))+ 0.8);
+  gl_FrontColor = gl_Color;
   gl_Position = gl_ProjectionMatrix*vVertex;
 }
