@@ -16,6 +16,7 @@ type GameObj struct {
 	Children *list.List
 	Constraints []Constraint
 	Rotation Vec3
+	Body PhysicsBody
 }
 
 func (self *GameObj) GetPosition()(Vec3){
@@ -86,10 +87,18 @@ func (self *GameObj) GetSubs() ([]PhysicsObject){
 			output = append(output,  child.GetSubs()...)
 		}
 	}
-	
 	return output
+	
 }
 
+func (self *GameObj) GetBody()(*PhysicsBody){
+	return &self.Body
+}
+
+func (self *GameObj) UpdatePhysics(){
+	self.Pos = self.Body.Pos
+	self.Velocity = self.Body.Velocity
+}
 
 
 
@@ -109,7 +118,8 @@ func NewGameObj(pos Vec3, size Vec3, color Vec3, mass float32,friction float32,P
 	if Parent != nil {
 		pos = pos.Add(Parent.Pos)
 	}
-	output :=  &GameObj{pos,size,color,Vec3{0,0,0},mass,friction,func(self *Box3D, t float32){},new(list.List),nil,Vec3{0,0,0} }
+	//fmt.Println("New game obj friction: " , friction)
+	output :=  &GameObj{pos,size,color,Vec3{0,0,0},mass,friction,func(self *Box3D, t float32){},new(list.List),nil,Vec3{0,0,0},*MakeBody(pos,size,mass,friction) }
 	if Parent != nil {
 		Parent.AddChildren(output)
 	} 
@@ -119,11 +129,11 @@ func NewGameObj(pos Vec3, size Vec3, color Vec3, mass float32,friction float32,P
 func MakeMan(position Vec3)(*GameObj){
 	body := NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.5,0.5},50,0,nil)
 
-	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},1,0,body)
-	rlegc := ObjectConstraint{body,rleg,Vec3{2,-4,0},1000,40}
+	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},1.1,1,body)
+	rlegc := ObjectConstraint{body,rleg,Vec3{2,-6,0},1000,200}
 	
-	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1,0,body)
-	llegc := ObjectConstraint{body,lleg,Vec3{-2,-4,0},1000,40}
+	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1.1,1,body)
+	llegc := ObjectConstraint{body,lleg,Vec3{-2,-6,0},1000,200}
 	
 	rarm := NewGameObj(Vec3{2,10,0},Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.7},1,0,body)
 	rarmConstraint := ObjectConstraint{body,rarm,Vec3{2,4,0},100,10}
@@ -140,33 +150,63 @@ func MakeMan(position Vec3)(*GameObj){
 		
 	}
 	DefAnim := func (self *Box3D, t float32){
-		rlegc.V.X = body.Rotation.Z*2
+		/*rlegc.V.X = body.Rotation.Z*2
 		rlegc.V.Z = -body.Rotation.X*2
 		llegc.V.X = -body.Rotation.Z*2
-		llegc.V.Z = body.Rotation.X*2
+		llegc.V.Z = body.Rotation.X*2*/
 
 
 	}
 	var jumpBusy bool
 	jumpBusy = false
+	rleg_begin := rlegc.V
+	lleg_begin := llegc.V
+
 	StartJump := func(self *Box3D, t float32){
 		jumpStart := t
-		jumpBusy = true
-		begPoint := rlegc.V
-		rlegc.V.Y -= 8
-		fmt.Println("Start jump!")
+		if rlegc.V.Y < llegc.V.Y {
+			rlegc.V.Y -= 8
+			rlegc.V.Z -= 4
+		}else {
+			llegc.V.Y -=8
+			llegc.V.Z -=4
+		}
 		body.Anim = func(self *Box3D, t float32){
 			if t-jumpStart > 0.5 {
-				rlegc.V = begPoint
+				rlegc.V = rleg_begin
+				llegc.V = lleg_begin
+				
 				body.Anim = DefAnim
-				jumpBusy = false
 			}
 		}
 	}
+	var direction float32 = 1
+	
+
+	Walk := func(self *Box3D, t float32){
+		var tc float32 = 0
+		
+		body.Anim = func(self * Box3D, t float32){
+			
+			tc = t*10
+			/*fmt.Println(t)
+			if(tc > math.Pi*2){
+				tc = 0
+			}*/
+			rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(direction*(tc + math.Pi),0))).Rotate(0, -body.Rotation.X)
+			llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(direction*tc,0))).Rotate(0, -body.Rotation.X)
+			//rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(direction*(tc + math.Pi),0)))//.Rotate(0, -body.Rotation.X)
+			//llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(direction*tc,0)))//.Rotate(0, -body.Rotation.X)
+			
+		}
+
+	}
+
 	
 	glfw.AddListener(
 	func(keyev glfw.KeyEvent){
-		switch keyev.Key{
+	fmt.Println(keyev)		
+	switch keyev.Key{
 
 		case glfw.KEY_RIGHT, glfw.KEY_D : {
 				if keyev.Action == 1 {
@@ -174,13 +214,18 @@ func MakeMan(position Vec3)(*GameObj){
 				}
 			}
 		case glfw.KEY_LEFT: {
+				
 				ApplyImpulse(body,Vec3{-1*body.Mass,0,0})
 			}
 		case glfw.KEY_UP: {
-				ApplyImpulse(body,body.Rotation.Scale(body.Mass))
+				direction = 1
+				body.Anim = Walk
+				
 			}
 		case glfw.KEY_DOWN: {
-				ApplyImpulse(body,body.Rotation.Scale(-body.Mass))
+				direction = -1
+				body.Anim = Walk
+				ApplyImpulse2(body.GetBody(),body.Rotation.Scale(-body.Mass))
 			}
 		case glfw.KEY_SPACE: {
 				fmt.Println("Eh?")
@@ -191,7 +236,7 @@ func MakeMan(position Vec3)(*GameObj){
 		}
 	})
 	 
-	body.AddChildren(rleg,lleg, rarm,larm,head)
+	//body.AddChildren(rleg,lleg, rarm,larm,head)
 
 	return body
 
@@ -213,12 +258,12 @@ func testbox2(position Vec3)(*GameObj){
 
 func ropetest(position Vec3, joints int,dist float32)(*GameObj){
 	body := NewGameObj(position,Vec3{1,1,1},Vec3{1,0.5,0.5},Inf,0,nil)
-	last := NewGameObj(Vec3{0,-1,0}, Vec3{1,1,1},Vec3{1,0.5,0.5},1,0,body)
+	last := NewGameObj(Vec3{0,-1,0}, Vec3{1,1,1},Vec3{1,0.5,0.5},1.5,1,body)
 	lastc := RopeConstraint{body,last,dist*2}
 	body.Constraints = []Constraint{lastc}
 	
 	for i:= 0; i < joints; i++ {
-		nlast := NewGameObj(Vec3{0,-dist,0}, Vec3{1,1,1},Vec3{1,0.5,0.5},1,0,last)
+		nlast := NewGameObj(Vec3{0,-dist,0}, Vec3{1,1,1},Vec3{1,0.5,0.5},1.5,10,last)
 		nlastc := RopeConstraint{last,nlast,dist*2}
 		last.Constraints = []Constraint{nlastc}
 		last = nlast
@@ -245,7 +290,8 @@ func testbox3(position Vec3)(*GameObj){
 
 
 func main(){
-
+	//BSPTest()
+	//return
 	//CamFocus Vec3
 
 	glfw.Init(800,600)
@@ -258,21 +304,25 @@ func main(){
 	ground.Mass = float32(math.Inf(1))
 	ground.Children = new(list.List)
 	ground.Friction = 1
+	ground = NewGameObj(Vec3{0,-3,0},Vec3{1000,10,1000},Vec3{0,0.5,0.1},float32(math.Inf(1)),0.1,nil)
 	world := new(World)
 	world.Init()
 	world.GameObjects = new(list.List)
-	world.Add(ground)
-	world.Add(testbox(Vec3{10,0,0}))
-	world.Add(testbox(Vec3{10,10,0}))
-	world.Add(testbox(Vec3{10,15,0}))
-	supertestbox := testbox3(Vec3{-10,10,0})
-	world.Add(supertestbox)
-	player := MakeMan(Vec3{10,100,10})
+	//world.Add(ground)
+	//world.Add(testbox(Vec3{10,0,0}))
+	//world.Add(testbox(Vec3{10,10,0}))
+	//world.Add(testbox(Vec3{10,15,0}))
+	//supertestbox := testbox3(Vec3{-10,10,0})
+	//world.Add(supertestbox)
+	player := MakeMan(Vec3{10,20,10})
 	world.Add(player)
-	world.Add(ropetest(Vec3{0,40,0},10,1.5))
-	nbox := testbox2(Vec3{15,20,0})
-	nbox.Mass = 10
-	world.Add(nbox)
+	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
+	//world.Add(NewGameObj(Vec3{0,150,0},Vec3{10000,10,10000},Vec3{0.5,0.5,0.9},float32(math.Inf(1)),0,nil))
+	
+	world.Add(ropetest(Vec3{0,40,0},10,4))
+	//nbox := testbox2(Vec3{15,20,0})
+	//nbox.Mass = 10
+	//world.Add(nbox)
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
@@ -309,27 +359,30 @@ func main(){
 
 	var t float64
 	var ot float64
+	var dt float32
 	t = float64(time.Nanoseconds())/1000000000
 	cam1 := Camera{player,100,Vec3{0,0,0}}
 	glfw.AddListener(func(m glfw.MouseMoveEvent){
-		cam1.Angle.X = float32(m.X - 400)/400*3.14
-		cam1.Angle.Y = float32(m.Y - 300)/300*3.14
-		player.Rotation = Vec3{float32(math.Sin(float64(cam1.Angle.X))),0,-float32(math.Cos(float64(cam1.Angle.X)))}
+		cam1.Angle.X = float32(m.X - 400)/400*3.14*2
+		cam1.Angle.Y = float32(m.Y - 300)/300*3.14*2
+		player.Rotation = Vec3{cam1.Angle.X,cam1.Angle.Y,0}
 	})
 	glfw.AddListener(func(mw glfw.MouseWheelEvent){
 		cam1.Distance = 100 + float32(mw.Pos*mw.Pos*mw.Pos)
 	})
 
 
-	for it := 0; it < 1000; it +=1 {
+	for it := 0; it < 100000; it +=1 {
 		cam1.Setup()
+		dt = float32(t - ot)
 		ot = t
+		math.Sin(float64(dt))
 		t = float64(float64(time.Nanoseconds())/1000000000)
-		DoPhysics(world.GameObjects,float32(t-ot))
+		DoPhysics(world.GameObjects,0.001)//float32(t-ot))
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		DrawWorld(world.GameObjects,float32(t-ot),pg)
+		DrawWorld(world.GameObjects,0.001,pg)
 		glfw.SwapBuffers()
-		time.Sleep(10000000)
+		time.Sleep(100000)
 	}
 	
 }

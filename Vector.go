@@ -32,14 +32,6 @@ func (self Vec3) ElemMul(v Vec3)(Vec3){
 	return Vec3{self.X*v.X, self.Y*v.Y, self.Z*v.Z}
 }
 
-
-func Fabs32(in float32)(float32){
-	if in < 0 {
-		return -in
-	}
-	return in	
-}
-
 func (self Vec3) Abs()(Vec3){
 		return Vec3{Fabs32(self.X),Fabs32(self.Y),Fabs32(self.Z)}
 }
@@ -82,6 +74,7 @@ func (self Vec3) Length()(float32){
 	return float32(math.Sqrt(float64(self.X*self.X + self.Y*self.Y + self.Z*self.Z)))
 }
 
+
 func (self Vec3) Normalize()(Vec3){
 	len := self.Length()
 	return Vec3{self.X/len, self.Y/len,self.Z/len}
@@ -104,3 +97,20 @@ func (s Vec3) BiggestComponent()(int){
 	return 2
 }
 
+func (s Vec3) GetComponent(i int)float32 {
+	if i == 0 {
+		return s.Z
+	}else if i == 1 {
+		return s.Y
+	}
+	return s.Z
+
+}
+
+func (s *Vec3) SetComponent(i int, val float32){
+	switch i {
+	case 0: s.X = val
+	case 1: s.Y = val
+	case 2: s.Z = val
+	}
+}
