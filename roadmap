@@ -1,0 +1,24 @@
+*** BoxWorld roadmap ***
+
+Development list:
+y. 2011
+5.jun	    Simplify Physics code using body struct
+*	    Ghost boxes
+*	    Remove time step
+*	    Friction
+*	    BSP
+17.jun	    Sleep BSP zones
+*	    
+*	    Remove sprite tree structure
+20.jun	    Implement sound
+*	    
+*	    Shadows
+25.jun	    Text
+*
+26.jun	    Create world
+28.jun	    World generation
+30.jun	    Player progress/Game play
+5.aug	    Level editing
+*	    
+Sep->Okt    Game play testing, Game designing, bug fixes	    
+ 
