@@ -29,17 +29,18 @@ type PhysicsBody struct{
 	Velocity Vec3
 	Mass float32
 	Friction float32
-	
+	IsGhost bool
 	Near []floatBodySet
 	CausalityBox Vec3
 }
 
-func MakeBody(Pos Vec3, Size Vec3, Mass float32, Friction float32)(nout *PhysicsBody){
+func MakeBody(Pos Vec3, Size Vec3, Mass float32, Friction float32, IsGhost bool)(nout *PhysicsBody){
 	nout = new(PhysicsBody)
 	nout.Pos = Pos
 	nout.Size = Size
 	nout.Mass = Mass
 	nout.Friction = Friction
+	nout.IsGhost = IsGhost
 	return
 }
 
@@ -239,7 +240,9 @@ func DoPhysics(worldObjects *list.List,dt float32){
 			combSize = body1.Size.Add(body2.Size)
 			overlap = body1.Pos.Sub(body2.Pos).Abs().Sub(combSize)
 			if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
-				handleCollision(body1,body2,dt)
+				if body1.IsGhost == false && body2.IsGhost == false {
+					handleCollision(body1,body2,dt)
+				}
 			}
 		}
 

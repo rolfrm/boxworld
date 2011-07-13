@@ -6,15 +6,6 @@ import "fmt"
 import "math"
 import "time"
 
-func makeCounter(iterator int) (func()(int)){
-	var count int = 0
-	return func () (int){
-		count = count + iterator
-		return count
-	}
-}
-
-
 type GameObj struct {
 	Pos Vec3
 	Size Vec3
@@ -27,6 +18,7 @@ type GameObj struct {
 	Constraints []Constraint
 	Rotation Vec3
 	Body PhysicsBody
+	IsGhost bool
 }
 
 func (self *GameObj) GetPosition()(Vec3){
@@ -129,7 +121,7 @@ func NewGameObj(pos Vec3, size Vec3, color Vec3, mass float32,friction float32,P
 		pos = pos.Add(Parent.Pos)
 	}
 	//fmt.Println("New game obj friction: " , friction)
-	output :=  &GameObj{pos,size,color,Vec3{0,0,0},mass,friction,func(self *Box3D, t float32){},new(list.List),nil,Vec3{0,0,0},*MakeBody(pos,size,mass,friction) }
+	output :=  &GameObj{pos,size,color,Vec3{0,0,0},mass,friction,func(self *Box3D, t float32){},new(list.List),nil,Vec3{0,0,0},*MakeBody(pos,size,mass,friction,false),false }
 	if Parent != nil {
 		Parent.AddChildren(output)
 	} 
@@ -157,8 +149,19 @@ type Player struct {
 	RightArmRest Vec3
 	LeftArmRest Vec3
 	HeadRest Vec3
-	
 }
+
+func SetPlayerAnimation (self *Player)(*Player){
+	self.Body.Anim = func(box *Box3D, t float32){
+		self.HeadConstraint.V = self.HeadRest.Add(Vec3{0,Sin32(t*10),0})
+		self.LeftLegConstraint.V = self.LeftLegRest.Add( Vec3{Sin32(t*10),0,0} )
+		self.RightLeg.Body.IsGhost = true
+		self.LeftLeg.Body.IsGhost = true
+	}
+	return self
+
+} 
+
 
 func MakePlayer(position Vec3)(newPlayer *Player){
 	newPlayer = new(Player)
@@ -183,7 +186,6 @@ func MakePlayer(position Vec3)(newPlayer *Player){
 	newPlayer.HeadConstraint = ObjectConstraint{newPlayer.Body,newPlayer.Head,newPlayer.HeadRest,1000,200}
 
 	newPlayer.Body.Constraints = []Constraint{&(newPlayer.RightLegConstraint),&(newPlayer.LeftLegConstraint),&(newPlayer.RightArmConstraint),&(newPlayer.LeftArmConstraint),&newPlayer.HeadConstraint}
-
 	
 	return newPlayer
 }
@@ -360,6 +362,8 @@ func treeThing(position Vec3,lvs int)(*GameObj){
 
 
 func main(){
+	//BSPTest()
+	//return
 	glfw.Init(800,600)
 	InitPhysics()
 
@@ -376,11 +380,11 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,50,0}).Body)
 	
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
-
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
+	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
+	//world.Add(MakePlayer(Vec3{-20,130,0}).Body)
 	
-	world.Add(MakePlayer(Vec3{-20,120,0}).Body)
-	world.Add(treeThing(Vec3{-20,130,0},5))
+	world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
