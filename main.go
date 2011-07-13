@@ -5,6 +5,16 @@ import "container/list"
 import "fmt"
 import "math"
 import "time"
+
+func makeCounter(iterator int) (func()(int)){
+	var count int = 0
+	return func () (int){
+		count = count + iterator
+		return count
+	}
+}
+
+
 type GameObj struct {
 	Pos Vec3
 	Size Vec3
@@ -126,17 +136,71 @@ func NewGameObj(pos Vec3, size Vec3, color Vec3, mass float32,friction float32,P
 	return output
 }
 
+type Player struct {
+	Body *GameObj
+	RightLeg *GameObj
+	LeftLeg *GameObj
+	RightArm *GameObj
+	LeftArm *GameObj
+	Head *GameObj
+
+	//constraints
+	RightLegConstraint ObjectConstraint
+	LeftLegConstraint ObjectConstraint
+	RightArmConstraint ObjectConstraint
+	LeftArmConstraint ObjectConstraint
+	HeadConstraint ObjectConstraint
+
+	//Rest positions
+	RightLegRest Vec3
+	LeftLegRest Vec3
+	RightArmRest Vec3
+	LeftArmRest Vec3
+	HeadRest Vec3
+	
+}
+
+func MakePlayer(position Vec3)(newPlayer *Player){
+	newPlayer = new(Player)
+	newPlayer.Body = NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.5,0.5},50,0,nil)
+	newPlayer.RightLegRest = Vec3{2,-6,0}
+	newPlayer.LeftLegRest = Vec3{-2,-6,0}
+	newPlayer.RightArmRest = Vec3{2,4,0}
+	newPlayer.LeftArmRest = Vec3{-2,4,0}
+	newPlayer.HeadRest = Vec3{0,4,0}
+	legSize := Vec3{0.5,0.5,0.5}
+	newPlayer.RightLeg = NewGameObj(newPlayer.RightLegRest,legSize,Vec3{0.1,0.2,0.3},1.1,5,newPlayer.Body)
+	newPlayer.LeftLeg = NewGameObj(newPlayer.LeftLegRest,legSize,Vec3{0.1,0.2,0.3},1,5,newPlayer.Body)
+	newPlayer.RightArm = NewGameObj(newPlayer.RightArmRest,legSize,Vec3{0.2,0.1,0.3},1,5,newPlayer.Body)
+	newPlayer.LeftArm = NewGameObj(newPlayer.LeftArmRest,legSize,Vec3{0.2,0.1,0.3},1,5,newPlayer.Body)
+	newPlayer.Head = NewGameObj(newPlayer.HeadRest,Vec3{1,1,1},Vec3{0.4,0.4,0.4},1,5,newPlayer.Body)
+
+	newPlayer.RightLegConstraint =ObjectConstraint{newPlayer.Body,newPlayer.RightLeg,newPlayer.RightLegRest, 1000,200}
+	newPlayer.LeftLegConstraint = ObjectConstraint{newPlayer.Body,newPlayer.LeftLeg,newPlayer.LeftLegRest,1000,200}
+	newPlayer.RightArmConstraint = ObjectConstraint{newPlayer.Body,newPlayer.RightArm,newPlayer.RightArmRest,1000,200}
+
+	newPlayer.LeftArmConstraint = ObjectConstraint{newPlayer.Body,newPlayer.LeftArm,newPlayer.LeftArmRest,1000,200}
+	newPlayer.HeadConstraint = ObjectConstraint{newPlayer.Body,newPlayer.Head,newPlayer.HeadRest,1000,200}
+
+	newPlayer.Body.Constraints = []Constraint{&(newPlayer.RightLegConstraint),&(newPlayer.LeftLegConstraint),&(newPlayer.RightArmConstraint),&(newPlayer.LeftArmConstraint),&newPlayer.HeadConstraint}
+
+	
+	return newPlayer
+}
+
+
+
 func MakeMan(position Vec3)(*GameObj){
 	body := NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.5,0.5},50,0,nil)
 
-	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},1.1,1,body)
+	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},1.1,5,body)
 	rlegc := ObjectConstraint{body,rleg,Vec3{2,-6,0},1000,200}
 	
-	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1.1,1,body)
+	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1.1,5,body)
 	llegc := ObjectConstraint{body,lleg,Vec3{-2,-6,0},1000,200}
 	
 	rarm := NewGameObj(Vec3{2,10,0},Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.7},1,0,body)
-	rarmConstraint := ObjectConstraint{body,rarm,Vec3{2,4,0},100,10}
+	rarmc := ObjectConstraint{body,rarm,Vec3{2,4,0},100,10}
 	
 	larm := NewGameObj(Vec3{-2,10,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1,0,body)
 	larmc := ObjectConstraint{body,larm,Vec3{-2,4,0},100,10}
@@ -145,38 +209,44 @@ func MakeMan(position Vec3)(*GameObj){
 	headc := ObjectConstraint{body,head,Vec3{0,4,0},1000,40}
 	
 
-	body.Constraints = []Constraint{&rlegc,&llegc,&rarmConstraint, &headc,&larmc}
+	body.Constraints = []Constraint{&rlegc,&llegc,&rarmc, &headc,&larmc}
 	body.Anim = func(self *Box3D,t float32)(){
 		
-	}
-	DefAnim := func (self *Box3D, t float32){
-		/*rlegc.V.X = body.Rotation.Z*2
-		rlegc.V.Z = -body.Rotation.X*2
-		llegc.V.X = -body.Rotation.Z*2
-		llegc.V.Z = body.Rotation.X*2*/
-
-
 	}
 	var jumpBusy bool
 	jumpBusy = false
 	rleg_begin := rlegc.V
 	lleg_begin := llegc.V
+	larm_begin := larmc.V
+	rarm_begin := rarmc.V
+	var walkCycle float32 = 0
+	var speed float32 = 1
+	advAnim := func(self *Box3D,t float32){
+		walkCycle += 0.01*speed
+		
+		
+		rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(walkCycle + math.Pi,0))).Rotate(0, -body.Rotation.X)
+		llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(walkCycle, 0))).Rotate(0, -body.Rotation.X)
+		rarmc.V = rarm_begin.Add(Vec3{0,-2,0}.Rotate(walkCycle,0)).Rotate(0,-body.Rotation.X)
+		larmc.V = larm_begin.Rotate(0,-body.Rotation.X)
+	
+
+}
+	body.Anim = advAnim
+
 
 	StartJump := func(self *Box3D, t float32){
 		jumpStart := t
 		if rlegc.V.Y < llegc.V.Y {
-			rlegc.V.Y -= 8
-			rlegc.V.Z -= 4
+			rlegc.V = (rleg_begin.Sub(Vec3{0,5,-5})).Rotate(0,-body.Rotation.X)
 		}else {
-			llegc.V.Y -=8
-			llegc.V.Z -=4
+			llegc.V = (lleg_begin.Sub(Vec3{0,5,-5})).Rotate(0,-body.Rotation.X)
 		}
 		body.Anim = func(self *Box3D, t float32){
 			if t-jumpStart > 0.5 {
 				rlegc.V = rleg_begin
 				llegc.V = lleg_begin
 				
-				body.Anim = DefAnim
 			}
 		}
 	}
@@ -189,14 +259,9 @@ func MakeMan(position Vec3)(*GameObj){
 		body.Anim = func(self * Box3D, t float32){
 			
 			tc = t*10
-			/*fmt.Println(t)
-			if(tc > math.Pi*2){
-				tc = 0
-			}*/
 			rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(direction*(tc + math.Pi),0))).Rotate(0, -body.Rotation.X)
 			llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(direction*tc,0))).Rotate(0, -body.Rotation.X)
-			//rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(direction*(tc + math.Pi),0)))//.Rotate(0, -body.Rotation.X)
-			//llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(direction*tc,0)))//.Rotate(0, -body.Rotation.X)
+
 			
 		}
 
@@ -209,13 +274,11 @@ func MakeMan(position Vec3)(*GameObj){
 	switch keyev.Key{
 
 		case glfw.KEY_RIGHT, glfw.KEY_D : {
-				if keyev.Action == 1 {
-					ApplyImpulse(body,Vec3{1*body.Mass,0,0})
-				}
+				
 			}
 		case glfw.KEY_LEFT: {
 				
-				ApplyImpulse(body,Vec3{-1*body.Mass,0,0})
+				
 			}
 		case glfw.KEY_UP: {
 				direction = 1
@@ -225,18 +288,14 @@ func MakeMan(position Vec3)(*GameObj){
 		case glfw.KEY_DOWN: {
 				direction = -1
 				body.Anim = Walk
-				ApplyImpulse2(body.GetBody(),body.Rotation.Scale(-body.Mass))
 			}
 		case glfw.KEY_SPACE: {
-				fmt.Println("Eh?")
 				if !jumpBusy{
 					body.Anim = StartJump
 				}
 			}
 		}
 	})
-	 
-	//body.AddChildren(rleg,lleg, rarm,larm,head)
 
 	return body
 
@@ -275,54 +334,53 @@ func ropetest(position Vec3, joints int,dist float32)(*GameObj){
 
 }
 
-
-
 func testbox3(position Vec3)(*GameObj){
 
 	body := NewGameObj(position,Vec3{1,1,1},Vec3{0,0,1},84,0,nil)
 	//body2 := NewGameObj(Vec3{0,2,0},Vec3{1,1,1},Vec3{1,0,0},1,0,body)
 	//	body.Constraints = []Constraint{ObjectConstraint{body,body2,Vec3{0,4,0},100,40}}
 	glfw.AddListener(func(keyev glfw.KeyEvent){
-		ApplyImpulse(body,Vec3{0,10*body.Mass,0})
+		
 	})
 	return body
 }
 
+func treeThing(position Vec3,lvs int)(*GameObj){
+	stem := NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.1,0.3},10,0,nil)
+	last := stem
+	var i int
+	for i= 0; i < lvs; i++ {
+		last = NewGameObj(Vec3{0,2,0},Vec3{1,0,1}.Scale(float32(lvs - i)).Add(Vec3{0,1,0}),Vec3{0.2,0.5,0.2},10,0,last)
+	}
+
+	return stem
+}
+
+
+
 
 func main(){
-	//BSPTest()
-	//return
-	//CamFocus Vec3
-
 	glfw.Init(800,600)
 	InitPhysics()
 
-	ground := new(GameObj)
-	ground.Pos = Vec3{0,-3,0}
-	ground.Size = Vec3{1000,10,1000}
-	ground.Color = Vec3{0,0.5,0.1}
-	ground.Mass = float32(math.Inf(1))
-	ground.Children = new(list.List)
-	ground.Friction = 1
-	ground = NewGameObj(Vec3{0,-3,0},Vec3{1000,10,1000},Vec3{0,0.5,0.1},float32(math.Inf(1)),0.1,nil)
 	world := new(World)
 	world.Init()
 	world.GameObjects = new(list.List)
-	//world.Add(ground)
-	//world.Add(testbox(Vec3{10,0,0}))
-	//world.Add(testbox(Vec3{10,10,0}))
-	//world.Add(testbox(Vec3{10,15,0}))
-	//supertestbox := testbox3(Vec3{-10,10,0})
-	//world.Add(supertestbox)
 	player := MakeMan(Vec3{10,20,10})
+
 	world.Add(player)
 	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
-	//world.Add(NewGameObj(Vec3{0,150,0},Vec3{10000,10,10000},Vec3{0.5,0.5,0.9},float32(math.Inf(1)),0,nil))
+	world.Add(ropetest(Vec3{0,40,0},4,4))
+	world.Add(treeThing(Vec3{240,20,240},10))
+	world.Add(MakePlayer(Vec3{-20,20,0}).Body)
+	world.Add(MakePlayer(Vec3{-20,50,0}).Body)
 	
-	world.Add(ropetest(Vec3{0,40,0},10,4))
-	//nbox := testbox2(Vec3{15,20,0})
-	//nbox.Mass = 10
-	//world.Add(nbox)
+	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
+
+	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
+	
+	world.Add(MakePlayer(Vec3{-20,120,0}).Body)
+	world.Add(treeThing(Vec3{-20,130,0},5))
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
@@ -346,14 +404,9 @@ func main(){
 	fmt.Println(pg.GetInfoLog())
 	fmt.Println("******END*****")
 	
-	//gl.ClearColor(0.5,0.5,1,0)
-	gl.ClearColor(0,0,0,0)
-	//gl.Enable(gl.CULL_FACE)
+	gl.ClearColor(0.5,0.5,1,0)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
-	gl.Enable(gl.FOG)
-	//gl.Disable(gl.DEPTH_TEST)
-	//gl.CullFace(gl.BACK)
 	gl.Enable(gl.POLYGON_SMOOTH)
 	gl.Hint(gl.POLYGON_SMOOTH_HINT,gl.NICEST)
 
@@ -375,14 +428,15 @@ func main(){
 	for it := 0; it < 100000; it +=1 {
 		cam1.Setup()
 		dt = float32(t - ot)
+		fmt.Println(dt)
 		ot = t
-		math.Sin(float64(dt))
+		dt = 0.001
 		t = float64(float64(time.Nanoseconds())/1000000000)
-		DoPhysics(world.GameObjects,0.001)//float32(t-ot))
+		DoPhysics(world.GameObjects,dt)//float32(t-ot))
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		DrawWorld(world.GameObjects,0.001,pg)
+		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
-		time.Sleep(100000)
+		//time.Sleep(100000)
 	}
 	
 }

@@ -2,10 +2,10 @@
 
 Development list:
 y. 2011
-5.jun	    Simplify Physics code using body struct
+5.jun	    Simplify Physics code using body struct X
 *	    Ghost boxes
 *	    Remove time step
-*	    Friction
+*	    Friction X
 *	    BSP
 17.jun	    Sleep BSP zones
 *	    

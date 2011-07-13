@@ -1,6 +1,4 @@
 package main
-import "math"
-
 type Vec3 struct{
 	X float32
 	Y float32
@@ -71,7 +69,7 @@ func (self Vec3) Dot(other Vec3)(float32){
 }
 
 func (self Vec3) Length()(float32){
-	return float32(math.Sqrt(float64(self.X*self.X + self.Y*self.Y + self.Z*self.Z)))
+	return Sqrt32(self.X*self.X + self.Y*self.Y + self.Z*self.Z)
 }
 
 
@@ -99,7 +97,7 @@ func (s Vec3) BiggestComponent()(int){
 
 func (s Vec3) GetComponent(i int)float32 {
 	if i == 0 {
-		return s.Z
+		return s.X
 	}else if i == 1 {
 		return s.Y
 	}
