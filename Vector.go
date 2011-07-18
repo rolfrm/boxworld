@@ -112,3 +112,23 @@ func (s *Vec3) SetComponent(i int, val float32){
 	case 2: s.Z = val
 	}
 }
+
+func (s *Vec3) Min()(float32){
+	if s.X < s.Y && s.X < s.Z {
+		return s.X
+	}
+	if s.Y < s.X && s.Y < s.Z{
+		return s.Y
+	}
+	return s.Z
+}
+
+func (s *Vec3) Max()(float32){
+	if s.X > s.Y && s.X > s.Z {
+		return s.X
+	}
+	if s.Y > s.Z && s.Y > s.X {
+		return s.Y
+	}
+	return s.Z
+}

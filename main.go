@@ -362,8 +362,8 @@ func treeThing(position Vec3,lvs int)(*GameObj){
 
 
 func main(){
-	//BSPTest()
-	//return
+	BSPTest()
+	return
 	glfw.Init(800,600)
 	InitPhysics()
 
@@ -372,19 +372,33 @@ func main(){
 	world.GameObjects = new(list.List)
 	player := MakeMan(Vec3{10,20,10})
 
-	world.Add(player)
+	/*world.Add(player)
 	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
 	world.Add(ropetest(Vec3{0,40,0},4,4))
-	world.Add(treeThing(Vec3{240,20,240},10))
+	world.Add(treeThing(Vec3{240,20,240},3))
 	world.Add(MakePlayer(Vec3{-20,20,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,50,0}).Body)
 	
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	//world.Add(MakePlayer(Vec3{-20,130,0}).Body)
-	
+	*/for i := 0; i < 100; i++ {
+		world.Add(MakePlayer(Vec3{float32(i)*100,20,0}).Body)
+	}
 	world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
+
+	qtn := new(QTNode)
+	for i:= world.GameObjects.Front(); i!= nil; i = i.Next() {
+		gobj := i.Value.(*GameObj)
+		all := gobj.GetSubs()
+		for i:= 0; i < len(all);i++ {
+			qtn.Insert(all[i])
+		}
+	}
+	fmt.Println("Total:", len(qtn.Data))
+	qtn.Divide()
+	qtn.Traverse(0)
+	return
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
