@@ -105,7 +105,7 @@ func (s Vec3) GetComponent(i int)float32 {
 
 }
 
-func (s *Vec3) SetComponent(i int, val float32){
+func (s Vec3) SetComponent(i int, val float32){
 	switch i {
 	case 0: s.X = val
 	case 1: s.Y = val
@@ -113,7 +113,7 @@ func (s *Vec3) SetComponent(i int, val float32){
 	}
 }
 
-func (s *Vec3) Min()(float32){
+func (s Vec3) Min()(float32){
 	if s.X < s.Y && s.X < s.Z {
 		return s.X
 	}
