@@ -123,7 +123,7 @@ func (s Vec3) Min()(float32){
 	return s.Z
 }
 
-func (s *Vec3) Max()(float32){
+func (s Vec3) Max()(float32){
 	if s.X > s.Y && s.X > s.Z {
 		return s.X
 	}
@@ -131,4 +131,9 @@ func (s *Vec3) Max()(float32){
 		return s.Y
 	}
 	return s.Z
+}
+
+func (s Vec3) ElmPow(pow float32)(Vec3){
+	return Vec3{s.X*s.X,s.Y*s.Y,s.Z*s.Z}
+
 }

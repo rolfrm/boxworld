@@ -9,6 +9,7 @@ GOFILES=\
 	math32.go\
 	Vector.go\
 	BSP.go\
+	ABSP.go\
 	physics.go\
 	graphics.go\
 	utils.go\

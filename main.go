@@ -362,7 +362,7 @@ func treeThing(position Vec3,lvs int)(*GameObj){
 
 
 func main(){
-	BSPTest()
+	ABSPTest()
 	return
 	glfw.Init(800,600)
 	InitPhysics()
@@ -382,12 +382,15 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	*/for i := 0; i < 100; i++ {
+	*/
+	/*for i := 0; i < 100; i++ {
 		world.Add(MakePlayer(Vec3{float32(i)*100,20,0}).Body)
-	}
+	}*/
 	world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
 
 	qtn := new(QTNode)
+	qtn.Position = Vec3{-10000,-10000,-10000}
+	qtn.Size = Vec3{20000,20000,20000}
 	for i:= world.GameObjects.Front(); i!= nil; i = i.Next() {
 		gobj := i.Value.(*GameObj)
 		all := gobj.GetSubs()
