@@ -106,6 +106,7 @@ func (self *GameObj) UpdatePhysics(){
 
 type World struct{
 	GameObjects *list.List
+	GameObjectTree *ABSPNode
 }
 
 func (self *World) Init(){
@@ -155,8 +156,8 @@ func SetPlayerAnimation (self *Player)(*Player){
 	self.Body.Anim = func(box *Box3D, t float32){
 		self.HeadConstraint.V = self.HeadRest.Add(Vec3{0,Sin32(t*10),0})
 		self.LeftLegConstraint.V = self.LeftLegRest.Add( Vec3{Sin32(t*10),0,0} )
-		self.RightLeg.Body.IsGhost = true
-		self.LeftLeg.Body.IsGhost = true
+		//self.RightLeg.Body.IsGhost = true
+		//self.LeftLeg.Body.IsGhost = true
 	}
 	return self
 
@@ -219,7 +220,7 @@ func MakeMan(position Vec3)(*GameObj){
 	jumpBusy = false
 	rleg_begin := rlegc.V
 	lleg_begin := llegc.V
-	larm_begin := larmc.V
+	/*larm_begin := larmc.V
 	rarm_begin := rarmc.V
 	var walkCycle float32 = 0
 	var speed float32 = 1
@@ -235,7 +236,7 @@ func MakeMan(position Vec3)(*GameObj){
 
 }
 	body.Anim = advAnim
-
+	*/
 
 	StartJump := func(self *Box3D, t float32){
 		jumpStart := t
@@ -362,8 +363,8 @@ func treeThing(position Vec3,lvs int)(*GameObj){
 
 
 func main(){
-	ABSPTest()
-	return
+	//ABSPTest()
+	//return
 	glfw.Init(800,600)
 	InitPhysics()
 
@@ -372,7 +373,7 @@ func main(){
 	world.GameObjects = new(list.List)
 	player := MakeMan(Vec3{10,20,10})
 
-	/*world.Add(player)
+	world.Add(player)
 	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
 	world.Add(ropetest(Vec3{0,40,0},4,4))
 	world.Add(treeThing(Vec3{240,20,240},3))
@@ -382,15 +383,15 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	*/
-	/*for i := 0; i < 100; i++ {
-		world.Add(MakePlayer(Vec3{float32(i)*100,20,0}).Body)
-	}*/
-	world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
+	for i := 0; i < 400; i++ {
+		world.Add(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200}).Body)
+	}
+	//world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
 
-	qtn := new(QTNode)
-	qtn.Position = Vec3{-10000,-10000,-10000}
-	qtn.Size = Vec3{20000,20000,20000}
+	qtn := new(ABSPNode)
+	qtn.Root = qtn
+	//qtn.Position = Vec3{-10000,-10000,-10000}
+	//qtn.Size = Vec3{20000,20000,20000}
 	for i:= world.GameObjects.Front(); i!= nil; i = i.Next() {
 		gobj := i.Value.(*GameObj)
 		all := gobj.GetSubs()
@@ -398,10 +399,16 @@ func main(){
 			qtn.Insert(all[i])
 		}
 	}
+	world.GameObjectTree = qtn
 	fmt.Println("Total:", len(qtn.Data))
 	qtn.Divide()
-	qtn.Traverse(0)
-	return
+	cols := 0
+	qtn.cd(func(obj1, obj2 SPData){
+		cols +=1
+	})
+	fmt.Println(cols)
+	//qtn.Traverse(0)
+	//return
 	gl.Init()
 	vs := gl.CreateShader(gl.VERTEX_SHADER)
 	vs.Source(
@@ -439,7 +446,7 @@ func main(){
 	glfw.AddListener(func(m glfw.MouseMoveEvent){
 		cam1.Angle.X = float32(m.X - 400)/400*3.14*2
 		cam1.Angle.Y = float32(m.Y - 300)/300*3.14*2
-		player.Rotation = Vec3{cam1.Angle.X,cam1.Angle.Y,0}
+		//player.Rotation = Vec3{cam1.Angle.X,cam1.Angle.Y,0}
 	})
 	glfw.AddListener(func(mw glfw.MouseWheelEvent){
 		cam1.Distance = 100 + float32(mw.Pos*mw.Pos*mw.Pos)
@@ -449,15 +456,19 @@ func main(){
 	for it := 0; it < 100000; it +=1 {
 		cam1.Setup()
 		dt = float32(t - ot)
-		fmt.Println(dt)
+		
+		//fmt.Println(dt)
 		ot = t
-		dt = 0.001
+		dt = 0.01
 		t = float64(float64(time.Nanoseconds())/1000000000)
-		DoPhysics(world.GameObjects,dt)//float32(t-ot))
+		pt := float64(float64(time.Nanoseconds())/1000000000)
+		DoPhysics(world.GameObjects,world.GameObjectTree,dt)//float32(t-ot))
+		fmt.Println(float64(float64(time.Nanoseconds())/1000000000) - pt)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
-		//time.Sleep(100000)
+		//time.Sleep(100000000)
+		
 	}
 	
 }

@@ -175,15 +175,19 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 		b1MoveWeight = b1.Mass/totalMass
 		b2MoveWeight = b2.Mass/totalMass
 	}
-
+	
 	b1.Pos = b1.Pos.Sub(moveOut.Scale(b1MoveWeight))
 	b2.Pos = b2.Pos.Add(moveOut.Scale(b2MoveWeight))
+	
 	difvel := b1.Velocity.Sub(b2.Velocity)
-	
+
 	j :=  difvel.Scale(-1).Dot(n)/(1/b1.Mass + 1/b2.Mass) //Normal force
-	
-	b1.Velocity = b1.Velocity.Add(n.Scale(j/b1.Mass))
-	b2.Velocity = b2.Velocity.Sub(n.Scale(j/b2.Mass))
+	if b1.Mass != Inf {
+		b1.Velocity = b1.Velocity.Add(n.Scale(j/b1.Mass))
+	}
+	if b2.Mass != Inf {
+		b2.Velocity = b2.Velocity.Sub(n.Scale(j/b2.Mass))
+	}
 	//Total energy is kept
 	var totalFriction float32 = Sqrt32(b1.Friction * b2.Friction)*j
 	var tangent Vec3 = Vec3{1,1,1}.Sub(n.Abs())
@@ -205,8 +209,26 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 	}
 
 }
+var cols int = 0
+func createCollisionAtom(dt float32)(func(SPData,SPData)){
+	cols = 0
+ return func (obj1, obj2 SPData){
+		cols += 1
+	overlap := obj1.GetPosition().Sub(obj2.GetPosition()).Abs().Sub(obj1.GetSize().Add(obj2.GetSize()))
+	if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
+		body1,_ := obj1.(*GameObj)
+		body2,_ := obj2.(*GameObj)
+			if body1 == body2 {
+				return
+			}
+		handleCollision(body1.GetBody(),body2.GetBody(),dt)
+	}
+		
 
-func DoPhysics(worldObjects *list.List,dt float32){
+}
+}
+func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
+	objectTree.Update()
 	var allObjects []PhysicsObject
 	for item := worldObjects.Front(); item != nil;item = item.Next() {
 		ob, ok := item.Value.(PhysicsObject)
@@ -218,6 +240,7 @@ func DoPhysics(worldObjects *list.List,dt float32){
 	
 	var body1 *PhysicsBody
 	var obj1 PhysicsObject
+	cols = 0
 	for i  := 0; i < len(allObjects);i++ {
 		obj1 = allObjects[i]
 		body1 = obj1.GetBody()
@@ -235,7 +258,9 @@ func DoPhysics(worldObjects *list.List,dt float32){
 		var body2 *PhysicsBody
 		var overlap Vec3
 		var combSize Vec3
+		//continue
 		for j := i+1; j < len(allObjects);j++ {	
+			cols += 1
 			body2 = allObjects[j].GetBody()
 			combSize = body1.Size.Add(body2.Size)
 			overlap = body1.Pos.Sub(body2.Pos).Abs().Sub(combSize)
@@ -247,8 +272,11 @@ func DoPhysics(worldObjects *list.List,dt float32){
 		}
 
 	}
+	//objectTree.cd(createCollisionAtom(dt))
+
 	for i:= 0; i < len(allObjects);i++ {
 		allObjects[i].UpdatePhysics()
 	}
+	fmt.Println(cols)
 	
 }

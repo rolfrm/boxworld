@@ -34,7 +34,7 @@ func (self *ABSPNode) GetMean()(Vec3){
 func (self *ABSPNode) GetVariance()(Vec3){
 	var out Vec3 = Vec3{0,0,0}
 	var mean Vec3 = self.GetMean()
-	fmt.Println("Mean: " , mean)
+	//fmt.Println("Mean: " , mean)
 	SPMap(func(obj SPData){
 		out = out.Add(obj.GetPosition().Sub(mean).ElmPow(2))
 	},self.Data)
@@ -42,7 +42,7 @@ func (self *ABSPNode) GetVariance()(Vec3){
 }
 
 func (self *ABSPNode) Divide(){
-	if len(self.Data) < 8 {
+	if len(self.Data) < 1 {
 		return
 	}
 	var mean Vec3 = self.GetMean()
@@ -55,7 +55,7 @@ func (self *ABSPNode) Divide(){
 	SPMap(func(obj SPData){
 		caseCounter[test.Cell(obj)] +=1
 	},self.Data)
-	fmt.Println(caseCounter)
+	//fmt.Println(caseCounter)
 	if caseCounter[0] + caseCounter[1] > 0 {
 		self.IsSplit = true
 		self.splitDim = test.splitDim
@@ -137,7 +137,7 @@ func (self *ABSPNode) Update(){
 }
 
 func (self *ABSPNode) Traverse(i int){
-	fmt.Println("recursion level: " , i)
+	fmt.Println("recursion level: " , i, len(self.Data))
 	if self.IsSplit {
 		self.Split[0].Traverse(i+1)
 		self.Split[1].Traverse(i+1)
@@ -148,6 +148,10 @@ func (self *ABSPNode) cd(fcd func(o1,o2 SPData)){
 	SPMap(func(nobj SPData){
 		self.cdo(fcd,nobj)
 	},self.Data)
+	if self.IsSplit {
+		self.Split[0].cd(fcd)
+		self.Split[1].cd(fcd)
+	}
 }
 
 func (self *ABSPNode) cdo(fcd func(o1,o2 SPData),obj SPData){
@@ -199,6 +203,13 @@ func (self *ABSPNode) RunCollisionFunction(colFunc func(o1 ,o2 SPData), obj SPDa
 	
 }
 
+func (self *ABSPNode) CountObjects() int {
+	if self.IsSplit {
+		return len(self.Data) + self.Split[0].CountObjects() + self.Split[1].CountObjects()
+	}
+	return len(self.Data)
+}
+
 /*type testBox2 struct {
 	Vec3 Pos
 	Vec3 Size
@@ -243,4 +254,5 @@ func ABSPTest(){
 	})
 	absp.Traverse(0)
 	fmt.Println(i)
+	fmt.Println(absp.CountObjects())
 }
