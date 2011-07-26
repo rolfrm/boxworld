@@ -155,7 +155,10 @@ type Player struct {
 func SetPlayerAnimation (self *Player)(*Player){
 	self.Body.Anim = func(box *Box3D, t float32){
 		self.HeadConstraint.V = self.HeadRest.Add(Vec3{0,Sin32(t*10),0})
-		self.LeftLegConstraint.V = self.LeftLegRest.Add( Vec3{Sin32(t*10),0,0} )
+		self.LeftArmConstraint.V = self.LeftArmRest.Add( Vec3{Sin32(t*10)*2,0,0} )
+		self.RightArmConstraint.V = self.RightArmRest.Add( Vec3{Sin32(t*10 +float32(math.Pi)/2)*2,0,0} )
+		self.LeftLegConstraint.V = self.LeftLegRest.Add( Vec3{0,Sin32(t*10)*4,0} )
+		self.RightLegConstraint.V = self.RightLegRest.Add( Vec3{0,Sin32(t*10)*4,0} )
 		//self.RightLeg.Body.IsGhost = true
 		//self.LeftLeg.Body.IsGhost = true
 	}
@@ -384,7 +387,7 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
 	for i := 0; i < 400; i++ {
-		world.Add(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200}).Body)
+		world.Add(SetPlayerAnimation(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200})).Body)
 	}
 	//world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
 
@@ -453,7 +456,7 @@ func main(){
 	})
 
 
-	for it := 0; it < 100000; it +=1 {
+	for it := 0; it < 1000; it +=1 {
 		cam1.Setup()
 		dt = float32(t - ot)
 		

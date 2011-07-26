@@ -81,14 +81,32 @@ func (self *ABSPNode) Divide(){
 }
 
 func (self *ABSPNode) Cell(obj SPData) int{
-	var oSize float32 = obj.GetSize().GetComponent(self.splitDim)
-	var diff float32 = self.splitPos - obj.GetPosition().GetComponent(self.splitDim)
-	if Fabs32(diff) < oSize {
-		return 2 //both
-	}else if diff > 0 {
+	var size Vec3 = obj.GetSize()
+	var pos Vec3 = obj.GetPosition()
+	var oSize float32
+	var diff float32
+
+	if self.splitDim == 0 {
+		oSize = size.X
+		diff = pos.X
+	}else if self.splitDim == 1 {
+		oSize = size.Y
+		diff = pos.Y
+	}else{
+		oSize = size.Z
+		diff = pos.Z
+	}
+	diff -= self.splitPos
+
+	
+	if diff > oSize {
 		return 1
 	}
-	return 0
+
+	if diff < -oSize {
+		return 0
+	}
+	return 2
 }
 
 func (self *ABSPNode) findContainingChild(obj SPData)(*ABSPNode){
@@ -155,9 +173,11 @@ func (self *ABSPNode) cd(fcd func(o1,o2 SPData)){
 }
 
 func (self *ABSPNode) cdo(fcd func(o1,o2 SPData),obj SPData){
-	SPMap(func(nobj SPData){
-		fcd(obj,nobj)
-	},self.Data)
+	data := self.Data
+	for i:= 0; i < len(self.Data);i++ {
+		fcd(obj, data[i])
+	}
+	
 	if self.IsSplit {
 		cell := self.Cell(obj)
 		if cell == 0 {
@@ -172,37 +192,6 @@ func (self *ABSPNode) cdo(fcd func(o1,o2 SPData),obj SPData){
 }
 
 
-func (self *ABSPNode) RunCollisionFunction(colFunc func(o1 ,o2 SPData), obj SPData){
-	if obj != nil {
-		SPMap(func(nobj SPData){
-			colFunc(obj,nobj)
-		},self.Data)
-		if self.IsSplit {
-			cell := self.Cell(obj)
-			self.Split[cell].RunCollisionFunction(colFunc,obj)
-			//self.Split[1].RunCollisionFunction(colFunc,obj)
-		}
-	}
-	fmt.Println("len: ", len(self.Data))
-	for i:= 0; i< len(self.Data); i++ {
-		for j:=i+1; j < len(self.Data); j++ {
-			colFunc(self.Data[i],self.Data[j])
-		}
-		if self.IsSplit{
-			cell :=self.Cell(self.Data[i])
-			fmt.Println(cell)
-			if cell == 2 || cell == 0 {
-				self.Split[0].RunCollisionFunction(colFunc,self.Data[i])
-			}				
-			if cell ==2 || cell == 1 {
-				self.Split[1].RunCollisionFunction(colFunc,self.Data[i])
-			}
-			
-		}
-	}
-	
-}
-
 func (self *ABSPNode) CountObjects() int {
 	if self.IsSplit {
 		return len(self.Data) + self.Split[0].CountObjects() + self.Split[1].CountObjects()
@@ -210,19 +199,6 @@ func (self *ABSPNode) CountObjects() int {
 	return len(self.Data)
 }
 
-/*type testBox2 struct {
-	Vec3 Pos
-	Vec3 Size
-}
-
-func (self *testBox2) GetPosition()(Vec3){
-
-	return self.Pos
-}
-
-func (self *testBox) GetSize()(Vec3) {
-	return self.Size
-}*/
 
 
 func ABSPTest(){

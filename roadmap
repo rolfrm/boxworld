@@ -4,20 +4,20 @@ Development list:
 y. 2011
 5.jun	    Simplify Physics code using body struct X
 *	    Ghost boxes X
-*	    Remove time step %
+*	    Remove time step
 *	    Friction X
-*	    BSP
+*	    BSP (KDTree=) X
 17.jun	    Sleep BSP zones
 *	    
 *	    Remove sprite tree structure
 20.jun	    Implement sound
 *	    
 *	    Shadows
-25.jun	    Text
+30.jun	    Text
 *
-26.jun	    Create world
-28.jun	    World generation
-30.jun	    Player progress/Game play
+*	    Create world
+*	    World generation
+*	    Player progress/Game play
 5.aug	    Level editing
 *	    
 Sep->Okt    Game play testing, Game designing, bug fixes	    

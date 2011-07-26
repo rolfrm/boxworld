@@ -212,10 +212,34 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 var cols int = 0
 func createCollisionAtom(dt float32)(func(SPData,SPData)){
 	cols = 0
+	var o1 SPData
+	var o1P Vec3
+	var o1S Vec3
+
+	var o2 SPData
+	var o2P Vec3
+	var o2S Vec3
+	//Speed bo
  return func (obj1, obj2 SPData){
+		if obj1 != o1 { //Memorization optimization
+			o1 = obj1
+			o1P = obj1.GetPosition()
+			o1S = obj1.GetSize()
+			//fmt.Println("hey! 1")
+		}
+		if obj2 != o2 {
+			//fmt.Println("Hey! 2")
+			o2 = obj2
+			o2P = obj2.GetPosition()
+			o2S = obj2.GetSize()
+		}
+
 		cols += 1
-	overlap := obj1.GetPosition().Sub(obj2.GetPosition()).Abs().Sub(obj1.GetSize().Add(obj2.GetSize()))
-	if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
+	//overlap := obj1.GetPosition().Sub(obj2.GetPosition()).Abs().Sub(obj1.GetSize().Add(obj2.GetSize()))
+	//overlap := nobj1Pos.Sub(nobj2Pos).Abs().Sub(nobj1Size.Add(nobj2Size))
+	
+	//if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
+		if Fabs32(o2P.X - o1P.X) - (o2S.X + o1S.X) < 0 && Fabs32(o2P.Z - o1P.Z) - (o2S.Z + o1S.Z) < 0 && Fabs32(o2P.Y - o1P.Y) - (o2S.Y  + o1S.Y) < 0 {
 		body1,_ := obj1.(*GameObj)
 		body2,_ := obj2.(*GameObj)
 			if body1 == body2 {
@@ -258,7 +282,7 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 		var body2 *PhysicsBody
 		var overlap Vec3
 		var combSize Vec3
-		//continue
+		continue
 		for j := i+1; j < len(allObjects);j++ {	
 			cols += 1
 			body2 = allObjects[j].GetBody()
@@ -272,7 +296,7 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 		}
 
 	}
-	//objectTree.cd(createCollisionAtom(dt))
+	objectTree.cd(createCollisionAtom(dt))
 
 	for i:= 0; i < len(allObjects);i++ {
 		allObjects[i].UpdatePhysics()
