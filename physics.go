@@ -209,9 +209,7 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 	}
 
 }
-var cols int = 0
 func createCollisionAtom(dt float32)(func(SPData,SPData)){
-	cols = 0
 	var o1 SPData
 	var o1P Vec3
 	var o1S Vec3
@@ -225,20 +223,13 @@ func createCollisionAtom(dt float32)(func(SPData,SPData)){
 			o1 = obj1
 			o1P = obj1.GetPosition()
 			o1S = obj1.GetSize()
-			//fmt.Println("hey! 1")
 		}
 		if obj2 != o2 {
-			//fmt.Println("Hey! 2")
 			o2 = obj2
 			o2P = obj2.GetPosition()
 			o2S = obj2.GetSize()
 		}
 
-		cols += 1
-	//overlap := obj1.GetPosition().Sub(obj2.GetPosition()).Abs().Sub(obj1.GetSize().Add(obj2.GetSize()))
-	//overlap := nobj1Pos.Sub(nobj2Pos).Abs().Sub(nobj1Size.Add(nobj2Size))
-	
-	//if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
 		if Fabs32(o2P.X - o1P.X) - (o2S.X + o1S.X) < 0 && Fabs32(o2P.Z - o1P.Z) - (o2S.Z + o1S.Z) < 0 && Fabs32(o2P.Y - o1P.Y) - (o2S.Y  + o1S.Y) < 0 {
 		body1,_ := obj1.(*GameObj)
 		body2,_ := obj2.(*GameObj)
@@ -264,7 +255,6 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 	
 	var body1 *PhysicsBody
 	var obj1 PhysicsObject
-	cols = 0
 	for i  := 0; i < len(allObjects);i++ {
 		obj1 = allObjects[i]
 		body1 = obj1.GetBody()
@@ -279,28 +269,11 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 			
 		obj1.SetPosition(obj1.GetPosition().Add(obj1.GetVelocity().Scale(dt)))
 		body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt))
-		var body2 *PhysicsBody
-		var overlap Vec3
-		var combSize Vec3
-		continue
-		for j := i+1; j < len(allObjects);j++ {	
-			cols += 1
-			body2 = allObjects[j].GetBody()
-			combSize = body1.Size.Add(body2.Size)
-			overlap = body1.Pos.Sub(body2.Pos).Abs().Sub(combSize)
-			if overlap.Z < 0 && overlap.Y < 0 && overlap.X < 0 {
-				if body1.IsGhost == false && body2.IsGhost == false {
-					handleCollision(body1,body2,dt)
-				}
-			}
-		}
-
+		
 	}
 	objectTree.cd(createCollisionAtom(dt))
 
 	for i:= 0; i < len(allObjects);i++ {
 		allObjects[i].UpdatePhysics()
 	}
-	fmt.Println(cols)
-	
 }

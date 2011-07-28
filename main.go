@@ -385,7 +385,7 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 400; i++ {
 		world.Add(SetPlayerAnimation(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200})).Body)
 	}
 	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))

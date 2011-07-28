@@ -34,7 +34,6 @@ func (self *ABSPNode) GetMean()(Vec3){
 func (self *ABSPNode) GetVariance()(Vec3){
 	var out Vec3 = Vec3{0,0,0}
 	var mean Vec3 = self.GetMean()
-	//fmt.Println("Mean: " , mean)
 	SPMap(func(obj SPData){
 		out = out.Add(obj.GetPosition().Sub(mean).ElmPow(2))
 	},self.Data)
@@ -113,8 +112,8 @@ func Cell(pos Vec3, size Vec3, splitPos float32, splitDim int) int{
 func (self *ABSPNode) Cell(obj SPData) int{
 	var size Vec3 = obj.GetSize()
 	var pos Vec3 = obj.GetPosition()
-	var oSize float32
-	var diff float32
+	var oSize float32 = 0
+	var diff float32 = 0
 
 	if self.splitDim == 0 {
 		oSize = size.X
@@ -161,25 +160,24 @@ func (self *ABSPNode) Find(obj SPData)(index int){
 	return -1
 }
 
-func (self *ABSPNode) RemoveObj(obj SPData) bool{
+func (self *ABSPNode) RemoveObj(obj SPData){
 	objIndex := self.Find(obj)
 	if objIndex != -1 {
 		self.Data = append(self.Data[:objIndex],self.Data[objIndex+1:]...)
-		return true
 	}
-	return false
 }
 
 func (self *ABSPNode) Update(){
 	for i:= 0; i < len(self.Data) ; i++ {
 		var containingNode *ABSPNode  = self.Root.findContainingChild(self.Data[i])
+		
 		if containingNode == self {
-			return
+			continue
 		}
 		containingNode.Insert(self.Data[i])
 		self.Data = append(self.Data[:i], self.Data[i+1:]...)
 
-		//i -= 1
+		i -= 1
 	}
 	if self.IsSplit {
 		self.Split[0].Update()
