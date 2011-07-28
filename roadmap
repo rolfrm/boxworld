@@ -9,16 +9,18 @@ y. 2011
 *	    BSP (KDTree=) X
 17.jun	    Sleep BSP zones
 *	    
-*	    Remove sprite tree structure
-20.jun	    Implement sound
 *	    
+*	    
+*
+*	    Verlet integration
 *	    Shadows
-30.jun	    Text
+*	    Implement sound
+*	    Text
 *
 *	    Create world
 *	    World generation
 *	    Player progress/Game play
-5.aug	    Level editing
+10.aug	    Level editing
 *	    
 Sep->Okt    Game play testing, Game designing, bug fixes	    
  

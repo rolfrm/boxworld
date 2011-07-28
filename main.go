@@ -471,8 +471,6 @@ func main(){
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
-		fmt.Println("Gametree count ", world.GameObjectTree.CountObjects())
-		//time.Sleep(100000000)
 		
 	}
 	

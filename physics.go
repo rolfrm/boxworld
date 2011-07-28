@@ -30,8 +30,7 @@ type PhysicsBody struct{
 	Mass float32
 	Friction float32
 	IsGhost bool
-	Near []floatBodySet
-	CausalityBox Vec3
+	LastVelocity Vec3
 }
 
 func MakeBody(Pos Vec3, Size Vec3, Mass float32, Friction float32, IsGhost bool)(nout *PhysicsBody){
@@ -258,19 +257,19 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 	for i  := 0; i < len(allObjects);i++ {
 		obj1 = allObjects[i]
 		body1 = obj1.GetBody()
+		body1.LastVelocity = body1.Velocity
 		if body1.Mass != Inf {
 			ApplyImpulse(body1,Vec3{0,-10*dt*body1.Mass,0})
 		}
-		body1.CausalityBox =body1.CausalityBox.Add(body1.Velocity.Scale(dt).Abs() )
 		constraints := obj1.GetConstraints()
 		for j:= 0; j < len(constraints); j++ {
 			constraints[j].Apply(dt)
 		}
-			
-		obj1.SetPosition(obj1.GetPosition().Add(obj1.GetVelocity().Scale(dt)))
-		body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt))
+
+		acc := body1.Velocity.Sub(body1.LastVelocity).Scale(dt*dt)
+		body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt)).Add(acc)
 		
-	}
+}
 	objectTree.cd(createCollisionAtom(dt))
 
 	for i:= 0; i < len(allObjects);i++ {
