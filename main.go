@@ -377,7 +377,6 @@ func main(){
 	player := MakeMan(Vec3{10,20,10})
 
 	world.Add(player)
-	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
 	world.Add(ropetest(Vec3{0,40,0},4,4))
 	world.Add(treeThing(Vec3{240,20,240},3))
 	world.Add(MakePlayer(Vec3{-20,20,0}).Body)
@@ -386,9 +385,11 @@ func main(){
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	for i := 0; i < 400; i++ {
+	for i := 0; i < 200; i++ {
 		world.Add(SetPlayerAnimation(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200})).Body)
 	}
+	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
+	
 	//world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
 
 	qtn := new(ABSPNode)
@@ -470,6 +471,7 @@ func main(){
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
+		fmt.Println("Gametree count ", world.GameObjectTree.CountObjects())
 		//time.Sleep(100000000)
 		
 	}

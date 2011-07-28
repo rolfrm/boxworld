@@ -21,14 +21,14 @@ func (self *ABSPNode) Insert(obj SPData ){
 
 
 func (self *ABSPNode) GetMean()(Vec3){
-	var out Vec3 = Vec3{0,0,0}
+	var µ Vec3 = Vec3{0,0,0}
 	var n float32 = 0
 	SPMap(func(obj SPData){
-		out = out.Add(obj.GetPosition())
+		µ = µ.Add(obj.GetPosition())
 		n += 1
 		
 	},self.Data)
-	return out.Scale(1/n)
+	return µ.Scale(1/n)
 }
 
 func (self *ABSPNode) GetVariance()(Vec3){
@@ -42,6 +42,7 @@ func (self *ABSPNode) GetVariance()(Vec3){
 }
 
 func (self *ABSPNode) Divide(){
+	
 	if len(self.Data) < 1 {
 		return
 	}
@@ -65,6 +66,7 @@ func (self *ABSPNode) Divide(){
 		self.Split[1] = new(ABSPNode)
 		self.Split[0].Root = self.Root
 		self.Split[1].Root = self.Root
+		
 		var newData []SPData
 		SPMap(func( obj SPData){
 			cell := self.Cell(obj)
@@ -79,6 +81,34 @@ func (self *ABSPNode) Divide(){
 		self.Split[1].Divide()
 	}
 }
+
+
+func Cell(pos Vec3, size Vec3, splitPos float32, splitDim int) int{
+	var oSize float32
+	var diff float32
+
+	if splitDim == 0 {
+		oSize = size.X
+		diff = pos.X
+	}else if splitDim == 1 {
+		oSize = size.Y
+		diff = pos.Y
+	}else{
+		oSize = size.Z
+		diff = pos.Z
+	}
+	diff -= splitPos
+
+	
+	if diff > oSize {
+		return 1
+	}
+
+	if diff < -oSize {
+		return 0
+	}
+	return 2
+} 
 
 func (self *ABSPNode) Cell(obj SPData) int{
 	var size Vec3 = obj.GetSize()
@@ -131,23 +161,26 @@ func (self *ABSPNode) Find(obj SPData)(index int){
 	return -1
 }
 
-func (self *ABSPNode) RemoveObj(obj SPData){
+func (self *ABSPNode) RemoveObj(obj SPData) bool{
 	objIndex := self.Find(obj)
 	if objIndex != -1 {
 		self.Data = append(self.Data[:objIndex],self.Data[objIndex+1:]...)
+		return true
 	}
+	return false
 }
 
 func (self *ABSPNode) Update(){
-	SPMap(func(obj SPData){
-		containingNode := self.Root.findContainingChild(obj)
+	for i:= 0; i < len(self.Data) ; i++ {
+		var containingNode *ABSPNode  = self.Root.findContainingChild(self.Data[i])
 		if containingNode == self {
 			return
 		}
-		//fmt.Println("This happened")
-		self.RemoveObj(obj)
-		containingNode.Insert(obj)
-	},self.Data)
+		containingNode.Insert(self.Data[i])
+		self.Data = append(self.Data[:i], self.Data[i+1:]...)
+
+		//i -= 1
+	}
 	if self.IsSplit {
 		self.Split[0].Update()
 		self.Split[1].Update()
@@ -163,9 +196,9 @@ func (self *ABSPNode) Traverse(i int){
 }
 
 func (self *ABSPNode) cd(fcd func(o1,o2 SPData)){
-	SPMap(func(nobj SPData){
-		self.cdo(fcd,nobj)
-	},self.Data)
+	for i:= 0; i < len(self.Data); i++ {
+		self.cdo(fcd,self.Data[i])
+	}
 	if self.IsSplit {
 		self.Split[0].cd(fcd)
 		self.Split[1].cd(fcd)
@@ -174,16 +207,15 @@ func (self *ABSPNode) cd(fcd func(o1,o2 SPData)){
 
 func (self *ABSPNode) cdo(fcd func(o1,o2 SPData),obj SPData){
 	data := self.Data
-	for i:= 0; i < len(self.Data);i++ {
+	for i:= 0; i < len(data);i++ {
 		fcd(obj, data[i])
 	}
 	
 	if self.IsSplit {
-		cell := self.Cell(obj)
-		if cell == 0 {
-			self.Split[0].cdo(fcd,obj)
-		}else if cell == 1{
-			self.Split[1].cdo(fcd,obj)
+		cell := Cell(obj.GetPosition(),obj.GetSize(),self.splitPos,self.splitDim)
+		if cell < 2 {
+			
+			self.Split[cell].cdo(fcd,obj)
 		}else{
 			self.Split[1].cdo(fcd,obj)
 			self.Split[0].cdo(fcd,obj)
