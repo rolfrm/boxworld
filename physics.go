@@ -241,8 +241,16 @@ func createCollisionAtom(dt float32)(func(SPData,SPData)){
 
 }
 }
-func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
+
+
+func UpdateCollisions(objectTree *ABSPNode, dt float32){
 	objectTree.Update()
+	objectTree.cd(createCollisionAtom(dt))
+	
+}
+
+func UpdatePositions(worldObjects * list.List, dt float32){
+	
 	var allObjects []PhysicsObject
 	for item := worldObjects.Front(); item != nil;item = item.Next() {
 		ob, ok := item.Value.(PhysicsObject)
@@ -269,9 +277,8 @@ func DoPhysics(worldObjects *list.List, objectTree *ABSPNode,dt float32){
 		acc := body1.Velocity.Sub(body1.LastVelocity).Scale(dt*dt)
 		body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt)).Add(acc)
 		
-}
-	objectTree.cd(createCollisionAtom(dt))
-
+	}
+	
 	for i:= 0; i < len(allObjects);i++ {
 		allObjects[i].UpdatePhysics()
 	}

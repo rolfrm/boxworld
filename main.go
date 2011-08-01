@@ -463,10 +463,16 @@ func main(){
 		
 		//fmt.Println(dt)
 		ot = t
-		dt = 0.01
+		dt = 0.02
 		t = float64(float64(time.Nanoseconds())/1000000000)
 		pt := float64(float64(time.Nanoseconds())/1000000000)
-		DoPhysics(world.GameObjects,world.GameObjectTree,dt)//float32(t-ot))
+		UpdatePositions(world.GameObjects,dt/3)
+		UpdatePositions(world.GameObjects,dt/3)
+		UpdatePositions(world.GameObjects,dt/3)
+		UpdateCollisions(world.GameObjectTree,dt)
+		
+		//DoPhysics(world.GameObjects,world.GameObjectTree,dt)//float32(t-ot))
+		
 		fmt.Println(float64(float64(time.Nanoseconds())/1000000000) - pt)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)

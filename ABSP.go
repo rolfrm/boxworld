@@ -56,7 +56,7 @@ func (self *ABSPNode) Divide(){
 		caseCounter[test.Cell(obj)] +=1
 	},self.Data)
 	//fmt.Println(caseCounter)
-	if caseCounter[0] + caseCounter[1] > 0 {
+	if caseCounter[0] + caseCounter[1] > caseCounter[2] {
 		self.IsSplit = true
 		self.splitDim = test.splitDim
 		self.splitPos = test.splitPos
