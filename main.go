@@ -457,23 +457,31 @@ func main(){
 	})
 
 
-	for it := 0; it < 1000; it +=1 {
+	for it := 0; it < 10000; it +=1 {
 		cam1.Setup()
 		dt = float32(t - ot)
 		
 		//fmt.Println(dt)
 		ot = t
-		dt = 0.02
-		t = float64(float64(time.Nanoseconds())/1000000000)
+		dt = 0.03
 		pt := float64(float64(time.Nanoseconds())/1000000000)
-		UpdatePositions(world.GameObjects,dt/3)
-		UpdatePositions(world.GameObjects,dt/3)
-		UpdatePositions(world.GameObjects,dt/3)
+
+		UpdatePositions(world.GameObjects,dt/4)
+		UpdatePositions(world.GameObjects,dt/4)
+		UpdatePositions(world.GameObjects,dt/4)
+		UpdatePositions(world.GameObjects,dt/4)
+		fmt.Println("Position update:", float64(float64(time.Nanoseconds())/1000000000) - pt)
+
+		t = float64(float64(time.Nanoseconds())/1000000000)
+		pt = float64(float64(time.Nanoseconds())/1000000000)
+		UpdateModelStates(world.GameObjects)
+
 		UpdateCollisions(world.GameObjectTree,dt)
-		
+		fmt.Println("Collision detection:", float64(float64(time.Nanoseconds())/1000000000) - pt)
+
+		UpdateModelStates(world.GameObjects)
 		//DoPhysics(world.GameObjects,world.GameObjectTree,dt)//float32(t-ot))
 		
-		fmt.Println(float64(float64(time.Nanoseconds())/1000000000) - pt)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
