@@ -1,5 +1,4 @@
 package main
-import "container/list"
 import "math"
 import "fmt"
 func eh(){
@@ -94,16 +93,22 @@ func (oc ObjectConstraint) Apply(dt float32){
 	body1 := oc.P1.GetBody()
 	body2 := oc.P2.GetBody()
 	
-	x := body1.Pos.Sub( body2.Pos ).Add(oc.V)
-	fspring := x.Scale(oc.Spring)
-	dvel :=body1.Velocity.Sub(body2.Velocity)
-	fdamp := dvel.Scale(oc.Damp)
-	ftotal := Vec3{0,0,0}.Sub(fspring).Sub(fdamp)
-	 
-	ApplyImpulse(body1,ftotal.Scale(0.5*dt))
-	ApplyImpulse(body2,ftotal.Scale(-0.5*dt))
+	x := Vec3{body1.Pos.X -body2.Pos.X + oc.V.X,body1.Pos.Y -body2.Pos.Y + oc.V.Y,body1.Pos.Z -body2.Pos.Z + oc.V.Z}
+	fspring := Vec3{x.X*oc.Spring,x.Y*oc.Spring,x.Z*oc.Spring}
+	dvel := Vec3{ body1.Velocity.X - body2.Velocity.X,body1.Velocity.Y - body2.Velocity.Y,body1.Velocity.Z - body2.Velocity.Z }
 
 	
+	fdamp := Vec3{dvel.X*oc.Damp,dvel.Y*oc.Damp,dvel.Z*oc.Damp}
+	ftotal := Vec3{-fspring.X - fdamp.X,-fspring.Y - fdamp.Y,-fspring.Z - fdamp.Z }
+	
+	vel := body1.Velocity
+	dtm := 0.5*dt/body1.Mass
+	body1.Velocity = Vec3{vel.X + ftotal.X*dtm,vel.Y + ftotal.Y*dtm,vel.Z + ftotal.Z*dtm} 
+	
+	vel = body2.Velocity
+	dtm = 0.5*dt/body2.Mass
+	body2.Velocity = Vec3{vel.X - ftotal.X*dtm,vel.Y - ftotal.Y*dtm,vel.Z - ftotal.Z*dtm} 
+
 }
 
 type RopeConstraint struct{
@@ -143,7 +148,7 @@ func (s Box) GetBox()(Box){
 
 //Instantanious add force..
 func ApplyImpulse(b1 *PhysicsBody, impulse Vec3){
-	b1.LastPosition = b1.LastPosition.Sub(impulse.Scale(1/b1.Mass*0.01))
+	b1.Velocity = b1.Velocity.Add(impulse.Scale(1/b1.Mass))
 }
 
 func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
@@ -184,19 +189,14 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 	b2.Pos = b2.Pos.Add(moveOut.Scale(b2MoveWeight))
 	
 	difvel := b1.Velocity.Sub(b2.Velocity)
-	
+
 	j :=  difvel.Scale(-1).Dot(n)/(1/b1.Mass + 1/b2.Mass) //Normal force
-	/*if b1.Mass != Inf {
-		//ApplyImpulse(b1,n.Scale(j/b1.Mass*0.5))
-		//b1.Velocity = b1.Velocity.Add(n.Scale(j/b1.Mass))
-		b1.LastPosition = b1.Pos.Sub(n.Scale(j/b1.Mass*dt*0))
+	if b1.Mass != Inf {
+		b1.Velocity = b1.Velocity.Add(n.Scale(j/b1.Mass))
 	}
 	if b2.Mass != Inf {
-		//ApplyImpulse(b2,n.Scale(-j/b2.Mass*0.5))
-		//b2.Velocity = b2.Velocity.Sub(n.Scale(j/b2.Mass))
-		b2.LastPosition = b2.Pos.Sub(n.Scale(-j/b2.Mass*dt*0))
-	}*/
-	return
+		b2.Velocity = b2.Velocity.Sub(n.Scale(j/b2.Mass))
+	}
 	//Total energy is kept
 	var totalFriction float32 = Sqrt32(b1.Friction * b2.Friction)*j
 	var tangent Vec3 = Vec3{1,1,1}.Sub(n.Abs())
@@ -207,20 +207,15 @@ func handleCollision(b1 *PhysicsBody, b2 *PhysicsBody, dt float32){
 		if ft.Length() < Fabs32(totalFriction){ //Static
 			if b1.Mass != Inf {
 				ApplyImpulse(b1,ft.Scale(-b1.Mass))
-				//b1.LastPosition = b1.Last.Add(ft.Scale(-dt*b1.Mass))
 			}
 			if b2.Mass != Inf {
 				ApplyImpulse(b2,ft.Scale(b2.Mass))
-		//		b2.LastPosition = b2.LastPosition.Add(ft.Scale(dt*b2.Mass))
 			}
 		}else{ //Dynamic
-		//	b1.LastPosition = b1.LastPosition.Add(damp.Scale(-1*dt))
-		//	b2.LastPosition = b2.LastPosition.Add(damp.Scale(dt))
 			ApplyImpulse(b1,damp.Scale(-1))
 			ApplyImpulse(b2,damp.Scale(1))
 		}   	
 	}
-
 }
 func createCollisionAtom(dt float32)(func(SPData,SPData)){
 	var o1 SPData
@@ -262,31 +257,24 @@ func UpdateCollisions(objectTree *ABSPNode, dt float32){
 	objectTree.cd(createCollisionAtom(dt))
 }
 
-func UpdateModelStates(worldObjects * list.List){
-	var allObjects []PhysicsObject
-	for item := worldObjects.Front(); item != nil;item = item.Next() {
-		ob, ok := item.Value.(PhysicsObject)
-		
-		if ok{
-			allObjects = append(allObjects, ob.GetSubs()...) 
-		}
-	}
-	
 
+func UpdateModelStates(allObjects []PhysicsObject){
+	
 	for i:= 0; i < len(allObjects);i++ {
 		allObjects[i].UpdatePhysics()
 	}
 }
 
 
-func UpdatePositions(worldObjects * list.List, dt float32){
-	
-	var allObjects []PhysicsObject
-	for item := worldObjects.Front(); item != nil;item = item.Next() {
-		ob, ok := item.Value.(PhysicsObject)
-		
-		if ok{
-			allObjects = append(allObjects, ob.GetSubs()...) 
+func UpdatePositions(allObjects []PhysicsObject, dt float32){
+	n:= 20
+	var constraints []Constraint
+	for i:=0; i < n; i++ {
+		for j:= 0; j < len(allObjects); j++ {
+			constraints = allObjects[j].GetConstraints()
+			for k:= 0; k < len(constraints); k++ {
+				constraints[k].Apply(dt/float32(n))
+			}
 		}
 	}
 	
@@ -295,23 +283,10 @@ func UpdatePositions(worldObjects * list.List, dt float32){
 		body1 := obj1.GetBody()
 
 		if body1.Mass != Inf {
-			body1.Acceleration = Vec3{0,-10,0}
-			//ApplyImpulse(body1,Vec3{0,-10*dt*body1.Mass,0})
-		}
-		constraints := obj1.GetConstraints()
-		for j:= 0; j < len(constraints); j++ {
-			constraints[j].Apply(dt)
+			ApplyImpulse(body1,Vec3{0,-10*dt*body1.Mass,0})
 		}
 		
-		newpos := body1.Pos.Scale(2).Sub(body1.LastPosition).Add(body1.Acceleration.Scale(dt*dt))
-		body1.LastPosition = body1.Pos
-		body1.Pos = newpos
-		body1.Velocity = body1.Pos.Sub(body1.LastPosition).Scale(1/dt)
+		body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt))
 
-		//body1.Pos = body1.Pos.Add(body1.Velocity.Scale(dt)).Add(acc)
-		
-	}
-	for i:= 0; i < len(allObjects);i++ {
-		allObjects[i].UpdatePhysics()
 	}
 }

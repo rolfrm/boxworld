@@ -107,6 +107,7 @@ func (self *GameObj) UpdatePhysics(){
 type World struct{
 	GameObjects *list.List
 	GameObjectTree *ABSPNode
+	PhysicsObjects []PhysicsObject
 }
 
 func (self *World) Init(){
@@ -116,6 +117,16 @@ func (self *World) Init(){
 func (self *World) Add(obj * GameObj){
 	self.GameObjects.PushBack(obj)
 }
+
+func (self *World) CompilePhysicsObjects(){
+	for item := self.GameObjects.Front(); item != nil; item = item.Next() {
+		ob, ok := item.Value.(PhysicsObject)
+		if ok {
+			self.PhysicsObjects = append(self.PhysicsObjects,ob.GetSubs()...)
+		}
+	}
+}
+
 
 func NewGameObj(pos Vec3, size Vec3, color Vec3, mass float32,friction float32,Parent *GameObj)(*GameObj){
 	if Parent != nil {
@@ -182,8 +193,8 @@ func MakePlayer(position Vec3)(newPlayer *Player){
 	newPlayer.LeftArm = NewGameObj(newPlayer.LeftArmRest,legSize,Vec3{0.2,0.1,0.3},1,5,newPlayer.Body)
 	newPlayer.Head = NewGameObj(newPlayer.HeadRest,Vec3{1,1,1},Vec3{0.4,0.4,0.4},1,5,newPlayer.Body)
 
-	newPlayer.RightLegConstraint =ObjectConstraint{newPlayer.Body,newPlayer.RightLeg,newPlayer.RightLegRest, 1000,200}
-	newPlayer.LeftLegConstraint = ObjectConstraint{newPlayer.Body,newPlayer.LeftLeg,newPlayer.LeftLegRest,1000,200}
+	newPlayer.RightLegConstraint =ObjectConstraint{newPlayer.Body,newPlayer.RightLeg,newPlayer.RightLegRest, 2000,200}
+	newPlayer.LeftLegConstraint = ObjectConstraint{newPlayer.Body,newPlayer.LeftLeg,newPlayer.LeftLegRest,2000,200}
 	newPlayer.RightArmConstraint = ObjectConstraint{newPlayer.Body,newPlayer.RightArm,newPlayer.RightArmRest,1000,200}
 
 	newPlayer.LeftArmConstraint = ObjectConstraint{newPlayer.Body,newPlayer.LeftArm,newPlayer.LeftArmRest,1000,200}
@@ -200,10 +211,10 @@ func MakeMan(position Vec3)(*GameObj){
 	body := NewGameObj(position,Vec3{1,2,1},Vec3{0.5,0.5,0.5},50,0,nil)
 
 	rleg := NewGameObj(position.Add(Vec3{2,0,0}),Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.3},1.1,5,body)
-	rlegc := ObjectConstraint{body,rleg,Vec3{2,-6,0},1000,200}
+	rlegc := ObjectConstraint{body,rleg,Vec3{2,-6,0},3000,200}
 	
 	lleg := NewGameObj(Vec3{-2,0,0},Vec3{0.5,0.5,0.5},Vec3{0.3,0.2,0.1},1.1,5,body)
-	llegc := ObjectConstraint{body,lleg,Vec3{-2,-6,0},1000,200}
+	llegc := ObjectConstraint{body,lleg,Vec3{-2,-6,0},3000,200}
 	
 	rarm := NewGameObj(Vec3{2,10,0},Vec3{0.5,0.5,0.5},Vec3{0.1,0.2,0.7},1,0,body)
 	rarmc := ObjectConstraint{body,rarm,Vec3{2,4,0},100,10}
@@ -242,11 +253,11 @@ func MakeMan(position Vec3)(*GameObj){
 	*/
 
 	StartJump := func(self *Box3D, t float32){
-		jumpStart := t
+		jumpStart := t*3
 		if rlegc.V.Y < llegc.V.Y {
-			rlegc.V = (rleg_begin.Sub(Vec3{0,5,-5})).Rotate(0,-body.Rotation.X)
+			rlegc.V = (rleg_begin.Sub(Vec3{0,5,-7})).Rotate(0,-body.Rotation.X)
 		}else {
-			llegc.V = (lleg_begin.Sub(Vec3{0,5,-5})).Rotate(0,-body.Rotation.X)
+			llegc.V = (lleg_begin.Sub(Vec3{0,5,-7})).Rotate(0,-body.Rotation.X)
 		}
 		body.Anim = func(self *Box3D, t float32){
 			if t-jumpStart > 0.5 {
@@ -264,7 +275,7 @@ func MakeMan(position Vec3)(*GameObj){
 		
 		body.Anim = func(self * Box3D, t float32){
 			
-			tc = t*10
+			tc = t*3
 			rlegc.V = (rleg_begin.Add(Vec3{0,3,0}.Rotate(direction*(tc + math.Pi),0))).Rotate(0, -body.Rotation.X)
 			llegc.V = (lleg_begin.Add(Vec3{0,3,0}.Rotate(direction*tc,0))).Rotate(0, -body.Rotation.X)
 
@@ -378,16 +389,16 @@ func main(){
 
 	world.Add(player)
 	world.Add(ropetest(Vec3{0,40,0},4,4))
-	world.Add(treeThing(Vec3{240,20,240},3))
+	world.Add(treeThing(Vec3{20,20,20},3))
 	world.Add(MakePlayer(Vec3{-20,20,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,50,0}).Body)
 	
 	world.Add(MakePlayer(Vec3{-20,70,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,90,0}).Body)
 	world.Add(MakePlayer(Vec3{-20,110,0}).Body)
-	for i := 0; i < 400; i++ {
+	/*for i := 0; i < 100; i++ {
 		world.Add(SetPlayerAnimation(MakePlayer(Vec3{float32(int(i%10))*50,0,float32(i*2) - 200})).Body)
-	}
+	}*/
 	world.Add(NewGameObj(Vec3{0,-20,0},Vec3{10000,10,10000},Vec3{0,0.5,0.1},float32(math.Inf(1)),10,nil))
 	
 	//world.Add(SetPlayerAnimation(MakePlayer(Vec3{-20,120,0})).Body)
@@ -443,8 +454,6 @@ func main(){
 	gl.Hint(gl.POLYGON_SMOOTH_HINT,gl.NICEST)
 
 	var t float64
-	var ot float64
-	var dt float32
 	t = float64(time.Nanoseconds())/1000000000
 	cam1 := Camera{player,100,Vec3{0,0,0}}
 	glfw.AddListener(func(m glfw.MouseMoveEvent){
@@ -456,36 +465,24 @@ func main(){
 		cam1.Distance = 100 + float32(mw.Pos*mw.Pos*mw.Pos)
 	})
 
-
+	world.CompilePhysicsObjects()
 	for it := 0; it < 10000; it +=1 {
 		cam1.Setup()
-		dt = float32(t - ot)
-		
-		//fmt.Println(dt)
-		ot = t
-		dt = 0.03
-		pt := float64(float64(time.Nanoseconds())/1000000000)
-
-		UpdatePositions(world.GameObjects,dt/4)
-		UpdatePositions(world.GameObjects,dt/4)
-		UpdatePositions(world.GameObjects,dt/4)
-		UpdatePositions(world.GameObjects,dt/4)
-		fmt.Println("Position update:", float64(float64(time.Nanoseconds())/1000000000) - pt)
-
+		dt := float32(0.005)
 		t = float64(float64(time.Nanoseconds())/1000000000)
-		pt = float64(float64(time.Nanoseconds())/1000000000)
-		UpdateModelStates(world.GameObjects)
+		UpdatePositions(world.PhysicsObjects,dt)
+		
+		UpdateModelStates(world.PhysicsObjects)
 
 		UpdateCollisions(world.GameObjectTree,dt)
-		fmt.Println("Collision detection:", float64(float64(time.Nanoseconds())/1000000000) - pt)
-
-		UpdateModelStates(world.GameObjects)
-		//DoPhysics(world.GameObjects,world.GameObjectTree,dt)//float32(t-ot))
-		
+		UpdateModelStates(world.PhysicsObjects)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		DrawWorld(world.GameObjects,dt,pg)
 		glfw.SwapBuffers()
-		
+		pt := float64(float64(time.Nanoseconds())/1000000000)
+		sleeptime := (float64(dt) - (pt -t))*10e8
+		fmt.Println("Sleep for:", sleeptime)
+		time.Sleep(int64(sleeptime) )
 	}
 	
 }
